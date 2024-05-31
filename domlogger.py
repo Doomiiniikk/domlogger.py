@@ -52,19 +52,18 @@ class Logger():
         return self.getTimeStamp(ts, time.localtime())
 
     def getTimeStamp(self, ts="%Y-%d-%m %H:%M:%S", tm=time.localtime()):
+        # check for types
+        if not isinstance(tm, (int, float, time.struct_time)):
+            raise TypeError(F"Logger cannot use types other than float and time.struct_time to create a timestamp")
+        
+        if isinstance(tm, int):
+            tm = float(tm)
         if isinstance(tm,float):
             tm = time.gmtime(tm)
-        timestamp : str = ""
-        try:
-            timestamp = time.strftime(ts, tm)
-        except TypeError:
-            self.Warn("Could not create a timestamp, skipping it", skiptimestamp=True)
-            timestamp = ""
-        finally:
-            return timestamp
-
         
-    
+        timestamp = time.strftime(ts, tm)
+        return timestamp
+
     def levelConverter(self, level) -> str:
         if not level:
             level = self.level
@@ -97,7 +96,11 @@ class Logger():
         ts = ""
         if kwargs.get("skiptimestamp") in [False, None]:
             tForm = kwargs.get("ts", "%d-%m %H:%M:%S")
-            ts = f" {self.getLocalTimeStamp(tForm)}"
+            try:
+                ts = f" {self.getLocalTimeStamp(tForm)}"
+            except TypeError:
+                ts = ""
+                
         
         try:
             # string building
@@ -153,3 +156,5 @@ if __name__ == "__main__":
     mLog = Logger("")
     
     mLog.logWrite("heheh", 123)
+    
+    mLog.getTimeStamp(tm=123123)
