@@ -4,7 +4,7 @@ import time
 
 class Logger():
     
-    def __init__(self, logDir = None, printConsole = True):
+    def __init__(self, logDir = None, logFile = "log.log", printConsole = True):
         if not logDir:
             self.logDir = os.getcwd()
         else:
@@ -16,7 +16,8 @@ class Logger():
                     os.makedirs(self.logDir)
                 except Exception as e:
                     print(e)
-        self.logFileName = "log.log"
+                    
+        self.logFileName = f"{logFile}"
         self.logFilePath = os.path.join(self.logDir, self.logFileName)
         
         self.printConsole = printConsole
@@ -47,10 +48,23 @@ class Logger():
         # todo
         # time
         
-    def getTimeStamp(self, ts="%Y-%d-%m %H:%M:%S", tm=time.time()):
+    def getLocalTimeStamp(self, ts="%Y-%d-%m %H:%M:%S"):           
+        return self.getTimeStamp(ts, time.localtime())
+
+    def getTimeStamp(self, ts="%Y-%d-%m %H:%M:%S", tm=time.localtime()):
+        if isinstance(tm,float):
+            tm = time.gmtime(tm)
+        timestamp : str = ""
+        try:
+            timestamp = time.strftime(ts, tm)
+        except TypeError:
+            self.Warn("Could not create a timestamp, skipping it", skiptimestamp=True)
+            timestamp = ""
+        finally:
+            return timestamp
+
         
-            return f"{time.strftime(ts, time.gmtime(tm) )}"
-        
+    
     def levelConverter(self, level) -> str:
         if not level:
             level = self.level
@@ -67,55 +81,60 @@ class Logger():
         return f"{levelChar}"
 
     def logWrite(self, content : str, level : int = None, *args, **kwargs) -> bool:
+        
         if not content or (level and level < self.level):
             return False
         
         if not level:
             level = self.level 
             
-        if not "\n" in content or content[len(content) - 1 ] != "\n":
+        if not "\n" in content or content[len(content) - 1 ] != "\n": # if newline is not in, or newline is not the last character in the string.
             content = f"{content}\n"
-        else: 
-            
+        else: # todo figure out what I wanted to do here ;)
             pass
         
-        ts = kwargs.get("ts", "%d-%m %H:%M:%S")
+        # time
+        ts = ""
+        if kwargs.get("skiptimestamp") in [False, None]:
+            tForm = kwargs.get("ts", "%d-%m %H:%M:%S")
+            ts = f" {self.getLocalTimeStamp(tForm)}"
         
         try:
-            msg = f"[{self.levelConverter(level)}] {self.getTimeStamp(ts)} > {content}"
-            
+            # string building
+            msg = f"[{self.levelConverter(level)}]{ts} > {content}"
+                
             with open(self.logFilePath, "a") as logFile:
                 logFile.write(msg)
             
             if (self.printConsole):
                 print(msg)
         except PermissionError as e:
-            msg = "Logger does not have permission to write to current log file"
+            msg = f"Logger does not have permission to write to current log file {self.logFilePath}"
             print(msg)
 
         return True
     
     Write = logWrite
 
-    def Debug(self, content : str):
-        self.logWrite(f"{content}", level=self.debug)
-
-    def Information(self, content : str):
-        self.logWrite(f"{content}", level=self.information)
+    def Debug(self, content : str, *args, **kwargs):
+        self.logWrite(f"{content}", level=self.debug, *args, **kwargs)
     
+    def Information(self, content : str, *args, **kwargs):
+        self.logWrite(f"{content}", level=self.information, *args, **kwargs)
+        
     Info = Information
     # def Info(self, content: str):
     #     self.Information(content=f"{content}")
         
-    def Warn(self, content : str):
-        self.logWrite(f"{content}", level=self.warning)
-
-    def Error(self, content : str):
-        self.logWrite(f"{content}", level=self.error)
-
-    def Fatal(self, content : str):
-        self.logWrite(f"{content}", level=self.fatal)
-        
+    def Warn(self, content : str, *args, **kwargs):
+        self.logWrite(f"{content}", level=self.warning, *args, **kwargs)
+    
+    def Error(self, content : str, *args, **kwargs):
+        self.logWrite(f"{content}", level=self.error, *args, **kwargs)
+    
+    def Fatal(self, content : str, *args, **kwargs):
+        self.logWrite(f"{content}", level=self.fatal, *args, **kwargs)
+            
     def internalError(self, message, exc = Exception):
         try:
             self.Error(f"{message}")
@@ -133,4 +152,4 @@ if __name__ == "__main__":
     
     mLog = Logger("")
     
-    mLog.logWrite("", 123)
+    mLog.logWrite("heheh", 123)
