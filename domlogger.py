@@ -1,5 +1,5 @@
 import os
-
+import time
 
 
 class Logger():
@@ -44,6 +44,12 @@ class Logger():
         
         self.fatal = 3
         
+        # todo
+        # time
+        
+    def getTimeStamp(self, ts="%Y-%d-%m %H:%M:%S", tm=time.time()):
+        
+            return f"{time.strftime(ts, time.gmtime(tm) )}"
         
     def levelConverter(self, level) -> str:
         if not level:
@@ -58,9 +64,9 @@ class Logger():
             
             case _: levelChar = "D"
 
-        return f"[{levelChar}]> "
+        return f"{levelChar}"
 
-    def logWrite(self, content : str, level : int = None) -> bool:
+    def logWrite(self, content : str, level : int = None, *args, **kwargs) -> bool:
         if not content or (level and level < self.level):
             return False
         
@@ -73,8 +79,10 @@ class Logger():
             
             pass
         
+        ts = kwargs.get("ts", "%d-%m %H:%M:%S")
+        
         try:
-            msg = f"{self.levelConverter(level)}{content}"
+            msg = f"[{self.levelConverter(level)}] {self.getTimeStamp(ts)} > {content}"
             
             with open(self.logFilePath, "a") as logFile:
                 logFile.write(msg)
@@ -108,15 +116,15 @@ class Logger():
     def Fatal(self, content : str):
         self.logWrite(f"{content}", level=self.fatal)
         
-    def intError(self, message, exc):
+    def internalError(self, message, exc = Exception):
         try:
             self.Error(f"{message}")
-            raise exc
+            raise exc(f"{message}")
         except Exception as e:
             self.Error(f"intError.. errored out.. ironic \n {e}")
         else:
             return True
-        
+    intError = internalError
 
     
 
