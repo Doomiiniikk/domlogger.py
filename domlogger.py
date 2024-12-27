@@ -11,7 +11,7 @@ class domlogger():
         # logroot is the path where all log files will be written by default
         self.logRoot : Path
         if not logRoot:
-            self.logRoot = Path.joinpath(Path.cwd(), "config") 
+            self.logRoot = Path.joinpath(Path.cwd(), "logs") 
         else:
             self.logRoot = Path.joinpath(logRoot).absolute()
         
